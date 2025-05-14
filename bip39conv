@@ -1,0 +1,117 @@
+#!/usr/bin/env python
+
+import argparse
+import base64
+import lzma
+from pathlib import Path
+
+WORDS = "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"
+
+
+def decompress() -> list[str]:
+    return lzma.decompress(base64.b64decode(WORDS)).decode("utf-8").split("\x1f")
+
+
+def create_word_dict() -> dict[str, int]:
+    return {word: i for i, word in enumerate(decompress())}
+
+
+def create_index_dict() -> dict[int, str]:
+    return {i: word for i, word in enumerate(decompress())}
+
+
+def convert_mnemonic_to_binary(
+    mnemonic: str, word_dict: dict[str, int], output_path: Path | None = None
+) -> bytes:
+    mnemonic_words = mnemonic.split()
+    word_count = len(mnemonic_words)
+    if word_count % 12 != 0:
+        raise ValueError("Mnemonic must be a multiple of 12 words")
+
+    # Each index is 11 bits (0-2047), so we'll pack them into bytes
+    total_bits = word_count * 11
+    total_bytes = (total_bits + 7) // 8  # Round up to nearest byte
+    result = bytearray(total_bytes)
+
+    bit_pos = 0
+    for word in mnemonic_words:
+        word_index = word_dict.get(word)
+        if word_index is None:
+            raise ValueError(f"Invalid word in mnemonic: {word}")
+
+        # Pack 11 bits into the bytearray
+        for i in range(11):
+            if word_index & (1 << i):
+                byte_pos = (bit_pos + i) // 8
+                bit_in_byte = (bit_pos + i) % 8
+                result[byte_pos] |= 1 << bit_in_byte
+
+        bit_pos += 11
+
+    result_bytes = bytes(result)
+    if output_path:
+        output_path.touch(exist_ok=False)
+        output_path.write_bytes(result_bytes)
+    return result_bytes
+
+
+def convert_binary_to_mnemonic(
+    bin_data: bytes, index_dict: dict[int, str], output_path: Path | None = None
+) -> str:
+    mnemonic_words = []
+    bit_pos = 0
+    total_bits = len(bin_data) * 8
+
+    while bit_pos + 11 <= total_bits:
+        # Extract 11 bits
+        index = 0
+        for i in range(11):
+            byte_pos = (bit_pos + i) // 8
+            bit_in_byte = (bit_pos + i) % 8
+            if byte_pos < len(bin_data) and (bin_data[byte_pos] & (1 << bit_in_byte)):
+                index |= 1 << i
+
+        word = index_dict.get(index)
+        if word is None:
+            raise ValueError(f"Invalid index {index} in binary data")
+
+        mnemonic_words.append(word)
+        bit_pos += 11
+
+    mnemonic = " ".join(mnemonic_words)
+    if output_path:
+        output_path.touch(exist_ok=False)
+        output_path.write_text(mnemonic)
+    return mnemonic
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "--mnemonic",
+        "-m",
+        type=Path,
+        help="Path to mnemonic text file to convert to binary",
+    )
+    group.add_argument(
+        "--binary", "-b", type=Path, help="Path to binary file to convert to mnemonic"
+    )
+    args = parser.parse_args()
+
+    if args.mnemonic:
+        mnemonic = args.mnemonic.read_text()
+        word_dict = create_word_dict()
+        convert_mnemonic_to_binary(
+            mnemonic, word_dict, args.mnemonic.with_suffix(".bin")
+        )
+    elif args.binary:
+        binary = args.binary.read_bytes()
+        index_dict = create_index_dict()
+        convert_binary_to_mnemonic(binary, index_dict, args.binary.with_suffix(".txt"))
+    else:
+        raise ValueError("No input provided")
+
+
+if __name__ == "__main__":
+    main()
